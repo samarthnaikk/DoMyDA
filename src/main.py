@@ -1,5 +1,8 @@
 # Main entry point for DoMyDA quiz solver
-from helpers.helper_functions import parse_quiz_html
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../helpers')))
+from helper_functions import parse_quiz_html
 
 if __name__ == "__main__":
     # Path to the quiz HTML file
