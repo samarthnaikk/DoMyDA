@@ -1,0 +1,79 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>Quiz: Sum on page 2</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    #question { margin-bottom: 18px; }
+    table { border-collapse: collapse; margin: 10px 0; }
+    td, th { border: 1px solid #ccc; padding: 6px 10px; }
+  </style>
+</head>
+<body>
+  <h2>Q: Sum of values on page 2</h2>
+  <div id="question">Loading question...</div>
+
+  <div id="pages" style="display:none">
+    <!-- page 1 (visible initially) -->
+    <div class="page" data-page="1">
+      <h3>Page 1</h3>
+      <p>Intro text — click Next to see page 2.</p>
+      <button id="next">Next →</button>
+    </div>
+
+    <!-- page 2 (injected after delay) -->
+    <div class="page" data-page="2" style="display:none">
+      <h3>Page 2 — Data table</h3>
+      <table id="data-table">
+        <thead><tr><th>id</th><th>value</th></tr></thead>
+        <tbody>
+          <tr><td>1</td><td>10</td></tr>
+          <tr><td>2</td><td>25</td></tr>
+          <tr><td>3</td><td>5</td></tr>
+          <tr><td>4</td><td>60</td></tr>
+        </tbody>
+      </table>
+      <p>Submit your answer (sum of the "value" column) as JSON to the given submit URL.</p>
+    </div>
+  </div>
+
+  <pre id="meta" style="background:#f9f9f9;padding:10px;border:1px solid #eee;">
+<!-- meta-instructions will be injected here -->
+  </pre>
+
+<script>
+  // Simulate content that is rendered dynamically (requires DOM execution)
+  setTimeout(() => {
+    const encoded = btoa(JSON.stringify({
+      submit: "https://example.com/submit",
+      method: "POST",
+      payload_example: {
+        email: "student@example.com",
+        secret: "your-secret",
+        url: window.location.href,
+        answer: 100
+      },
+      note: "Compute the SUM of the 'value' column in the table on page 2. POST the answer field as a number."
+    }));
+    // decode and render
+    const info = JSON.parse(atob(encoded));
+    document.getElementById('meta').textContent = JSON.stringify(info, null, 2);
+    document.getElementById('question').textContent =
+      "Compute the SUM of the 'value' column in the table on page 2. Use the submit URL below.";
+    document.getElementById('pages').style.display = 'block';
+  }, 350);
+
+  // nav
+  document.addEventListener('click', e => {
+    if (e.target && e.target.id === 'next') {
+      // show page 2 (simulate JS rendering timing)
+      const p1 = document.querySelector('.page[data-page="1"]');
+      const p2 = document.querySelector('.page[data-page="2"]');
+      p1.style.display = 'none';
+      p2.style.display = 'block';
+    }
+  });
+</script>
+</body>
+</html>
