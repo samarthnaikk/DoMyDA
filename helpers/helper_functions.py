@@ -9,58 +9,51 @@ from bs4 import BeautifulSoup
 
 def parse_quiz_html(file_path: str) -> str:
     """
-    General parser for quiz HTML files. Extracts all questions and answers in a readable format.
-    - Finds questions in <h2>, <h3>, <h1>, and <div id='question'>
-    - For each table, lists its headers and rows
-    - For tables with a 'value' column, computes the sum
-    - Returns a formatted string with all found questions and answers
+    General parser for quiz HTML files. Extracts questions and answers in a readable format.
+    Handles static and dynamically rendered content (e.g., in <div id='result'>).
     """
+    import base64
+    import re
     with open(file_path, 'r', encoding='utf-8') as f:
         html = f.read()
     soup = BeautifulSoup(html, 'html.parser')
 
-    # Extract all questions
+    # Extract questions from headings
     questions = []
     for tag in ['h1', 'h2', 'h3']:
         for q in soup.find_all(tag):
             questions.append(q.get_text(strip=True))
-    qdiv = soup.find('div', id='question')
-    if qdiv:
-        questions.append(qdiv.get_text(strip=True))
+
+    # Try to extract question/answer from <div id='result'> (may be rendered via JS)
+    result_div = soup.find('div', id='result')
+    if result_div:
+        # Look for atob in script
+        scripts = soup.find_all('script')
+        for script in scripts:
+            m = re.search(r"atob\(`([A-Za-z0-9+/=\n]+)`\)", script.text)
+            if m:
+                b64 = m.group(1).replace('\n', '')
+                try:
+                    decoded = base64.b64decode(b64).decode('utf-8')
+                    # Try to extract question and answer from decoded text
+                    # If JSON, pretty print
+                    if decoded.strip().startswith('{'):
+                        import json
+                        try:
+                            obj = json.loads(decoded)
+                            questions.append(f"Decoded JSON: {json.dumps(obj, indent=2)}")
+                        except Exception:
+                            questions.append(f"Decoded: {decoded}")
+                    else:
+                        questions.append(f"Decoded: {decoded}")
+                except Exception:
+                    questions.append("Could not decode base64 content.")
+
     if not questions:
         questions.append("Question not found.")
-
-    # Extract all tables and try to find answers
-    answers = []
-    for table in soup.find_all('table'):
-        # Get headers
-        headers = [th.get_text(strip=True) for th in table.find_all('th')]
-        # Get all rows
-        rows = []
-        for tr in table.find_all('tr'):
-            cols = [td.get_text(strip=True) for td in tr.find_all('td')]
-            if cols:
-                rows.append(cols)
-        # If 'value' column exists, compute sum
-        if 'value' in headers:
-            idx = headers.index('value')
-            total = 0
-            for row in rows:
-                try:
-                    total += int(row[idx])
-                except (ValueError, IndexError):
-                    continue
-            answers.append(f"Sum of 'value' column: {total}")
-        else:
-            # Otherwise, just show table data
-            answers.append(f"Table with headers {headers}: {rows}")
-    if not answers:
-        answers.append("No tables or answers found.")
 
     # Format output
     output = ""
     for i, q in enumerate(questions):
-        output += f"Question {i+1}: {q}\n"
-    for i, a in enumerate(answers):
-        output += f"Answer {i+1}: {a}\n"
+        output += f"Question/Info {i+1}: {q}\n"
     return output.strip()

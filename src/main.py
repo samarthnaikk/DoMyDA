@@ -9,4 +9,4 @@ if __name__ == "__main__":
     quiz_file = "../recieved_data/quiz_1.html"
     # Compute the answer
     answer = parse_quiz_html(quiz_file)
-    print(f"Sum of 'value' column in quiz_1.html: {answer}")
+    print(answer)
