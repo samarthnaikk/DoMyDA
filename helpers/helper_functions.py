@@ -57,3 +57,109 @@ def parse_quiz_html(file_path: str) -> str:
     for i, q in enumerate(questions):
         output += f"Question/Info {i+1}: {q}\n"
     return output.strip()
+
+
+def list_received_files(received_dir: str) -> list:
+    """Return a list of file paths in `received_dir` (non-recursive).
+
+    Only returns regular files (no directories).
+    """
+    received_dir = os.path.abspath(received_dir)
+    if not os.path.isdir(received_dir):
+        return []
+    files = []
+    for name in os.listdir(received_dir):
+        path = os.path.join(received_dir, name)
+        if os.path.isfile(path):
+            files.append(path)
+    return sorted(files)
+
+
+def file_contains_text(file_path: str, text: str) -> bool:
+    """Return True if `text` appears in the file (case-sensitive)."""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = f.read()
+        return text in data
+    except Exception:
+        return False
+
+
+def find_files_matching_url(received_dir: str, url: str, exts=None) -> list:
+    """Find files in `received_dir` that likely correspond to the given `url`.
+
+    Matching strategy (best-effort):
+    - If `url` is a substring of the file contents, it's a match.
+    - If the filename contains a segment of the URL path, it's a match.
+    - If `exts` is provided, restrict to those extensions (e.g., ['.html', '.js']).
+    Returns a list of file paths.
+    """
+    if exts is None:
+        exts = ['.html', '.htm', '.js', '.json', '.txt']
+    url = url or ''
+    candidates = []
+    for path in list_received_files(received_dir):
+        if exts and not any(path.lower().endswith(e) for e in exts):
+            continue
+        matched = False
+        # check content
+        if url and file_contains_text(path, url):
+            matched = True
+        else:
+            # check filename tokens
+            fname = os.path.basename(path).lower()
+            # try last segment of url path
+            try:
+                seg = url.rstrip('/').split('/')[-1].lower()
+            except Exception:
+                seg = ''
+            if seg and seg in fname:
+                matched = True
+        if matched:
+            candidates.append(path)
+    return candidates
+
+
+def read_file_text(file_path: str) -> str:
+    """Return the text contents of a file; returns empty string on failure."""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return f.read()
+    except Exception:
+        return ''
+
+
+def download_quiz_files(url: str, received_dir: str) -> list:
+    """
+    Download the HTML file from the given URL and save it in received_dir.
+    Returns a list of saved file paths (just the HTML for now).
+    """
+    import requests
+    import re
+    import os
+    from urllib.parse import urlparse
+
+    if not os.path.isdir(received_dir):
+        os.makedirs(received_dir, exist_ok=True)
+
+    try:
+        resp = requests.get(url, timeout=10)
+        resp.raise_for_status()
+        html = resp.text
+    except Exception as e:
+        print(f"Error downloading {url}: {e}")
+        return []
+
+    # Save HTML file
+    # Use last segment of URL path for filename
+    parsed = urlparse(url)
+    fname = parsed.path.rstrip('/').split('/')[-1] or 'index'
+    # Remove query string for filename
+    fname = re.sub(r'[^a-zA-Z0-9_.-]', '_', fname)
+    html_path = os.path.join(received_dir, f'{fname}.html')
+    with open(html_path, 'w', encoding='utf-8') as f:
+        f.write(html)
+
+    # Optionally: parse for linked JS/CSS and download (not implemented yet)
+    # For now, just return the HTML file
+    return [html_path]
