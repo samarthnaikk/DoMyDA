@@ -9,6 +9,7 @@ from helper_functions import (
     find_files_matching_url,
     download_quiz_files,
     extract_likely_questions,
+    find_answers_with_gemini,
 )
 
 
@@ -48,9 +49,10 @@ def main():
         try:
             questions = extract_likely_questions(path)
             if questions:
-                print("Questions found:")
-                for q in questions:
-                    print(q)
+                print("Questions and Answers:")
+                answers = find_answers_with_gemini(questions)
+                for q, a in zip(questions, answers):
+                    print(f"Q: {q}\nA: {a}\n")
             else:
                 print("No likely questions found.")
         except Exception as e:

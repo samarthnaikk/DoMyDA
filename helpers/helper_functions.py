@@ -1,3 +1,27 @@
+def find_answers_with_gemini(questions: list) -> list:
+    """
+    Uses Google Generative AI (Gemini) to find answers for a list of questions.
+    Requires google-generativeai installed and API key in .env as GOOGLE_API_KEY.
+    Returns a list of answers (one per question).
+    """
+    import os
+    import google.generativeai as genai
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        raise RuntimeError("GOOGLE_API_KEY not found in .env")
+    genai.configure(api_key=api_key)
+    model = genai.GenerativeModel('gemini-2.5-flash')
+    answers = []
+    for q in questions:
+        try:
+            response = model.generate_content(q)
+            answers.append(response.text.strip())
+        except Exception as e:
+            answers.append(f"Error: {e}")
+    return answers
 import re
 import string
 
