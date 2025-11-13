@@ -8,6 +8,7 @@ from helper_functions import (
     list_received_files,
     find_files_matching_url,
     download_quiz_files,
+    extract_likely_questions,
 )
 
 
@@ -45,8 +46,13 @@ def main():
         print('\n' + '='*60)
         print(f"Processing file: {path}")
         try:
-            out = parse_quiz_html(path)
-            print(out)
+            questions = extract_likely_questions(path)
+            if questions:
+                print("Questions found:")
+                for q in questions:
+                    print(q)
+            else:
+                print("No likely questions found.")
         except Exception as e:
             print(f"Error processing {path}: {e}")
 

@@ -1,3 +1,42 @@
+import re
+import string
+
+def extract_likely_questions(file_path: str) -> list:
+    """
+    Extract likely questions from any HTML file using heuristics and basic NLP.
+    - Finds text nodes ending with '?' or containing interrogative words.
+    - Ignores navigation, boilerplate, and very short texts.
+    Returns a list of question strings.
+    """
+    from bs4 import BeautifulSoup
+    with open(file_path, 'r', encoding='utf-8') as f:
+        html = f.read()
+    soup = BeautifulSoup(html, 'html.parser')
+
+    interrogatives = {'what', 'which', 'who', 'whom', 'whose', 'when', 'where', 'why', 'how', 'describe', 'explain', 'give', 'list', 'select', 'choose'}
+    candidates = set()
+
+    # Get all visible text nodes
+    for el in soup.find_all(text=True):
+        txt = el.strip()
+        if not txt or len(txt) < 8:
+            continue
+        # Remove excessive whitespace and punctuation
+        txt_clean = txt.translate(str.maketrans('', '', string.punctuation)).strip()
+        words = set(w.lower() for w in txt_clean.split())
+        # Filter out JSON/config blobs and technical metadata
+        if re.match(r'^[\[{].*[\]}]$', txt) or re.search(r'(docs_flag_initialData|info_params|docs-|true|false|null|\{.*\}|\[.*\])', txt):
+            continue
+        # Heuristic: ends with '?' or contains interrogative word
+        if txt.endswith('?') or interrogatives.intersection(words):
+            # Ignore boilerplate (navigation, copyright, etc.)
+            if len(txt) > 8 and not re.search(r'(copyright|submit|next|previous|back|home|menu|login|logout)', txt, re.I):
+                candidates.add(txt)
+        # Also: long sentences with numbers or data requests
+        elif len(txt) > 30 and re.search(r'(sum|total|average|mean|count|find|compute|calculate|show|enter|answer)', txt, re.I):
+            candidates.add(txt)
+
+    return sorted(candidates)
 # Helper functions for DoMyDA quiz solver
 
 def verify_secret(secret: str, expected_secret: str) -> bool:
