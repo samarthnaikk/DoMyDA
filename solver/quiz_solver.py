@@ -41,7 +41,7 @@ async def solve_quiz(email: str, secret: str, start_url: str) -> None:
                 if b64:
                     logging.info("Found base64 block (len=%d)", len(b64))
                 try:
-                    submit_url = extract_submit_url(html)
+                    submit_url = extract_submit_url(html, url)
                 except ValueError:
                     logging.exception("Submit URL not found; stopping")
                     break

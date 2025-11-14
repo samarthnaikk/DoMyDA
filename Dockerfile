@@ -2,10 +2,17 @@ FROM mcr.microsoft.com/playwright/python:v1.45.0-jammy
 
 WORKDIR /app
 
-COPY requirements.txt .
+# Install git and clone the repository
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+
+# Clone the repository
+RUN git clone https://github.com/samarthnaikk/DoMyDA.git .
+
+# Install Python dependencies
 RUN pip install -r requirements.txt
 
-COPY . .
+# Install Playwright browsers
+RUN playwright install
 
 EXPOSE 8000
 
