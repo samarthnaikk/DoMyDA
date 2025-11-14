@@ -1,64 +1,58 @@
-# DoMyDA
+# TDS Quiz Solver Service
 
-## Project Overview
-This project is designed to automate the process of solving data analysis quizzes delivered via web pages. The quizzes require scraping, data processing, and submitting answers via HTTP POST requests. The workflow is as follows:
+## Overview
 
-1. **Receive Quiz URL**: The script receives a quiz URL and a secret (provided via Google Form).
-2. **Verify Secret**: The script verifies that the provided secret matches the one you submitted in the Google Form.
-3. **Visit Quiz Page**: The script visits the quiz page, which is rendered with JavaScript and contains a data-related task.
-4. **Solve Quiz**: The script scrapes the page, processes the data (e.g., sum, filter, analyze, visualize), and determines the correct answer.
-5. **Submit Answer**: The script submits the answer to the specified endpoint using a JSON payload:
-   ```json
-   {
-     "email": "your email",
-     "secret": "your secret",
-     "url": "quiz url",
-     "answer": <answer>
-   }
-   ```
-   - Respond with HTTP 200 and JSON if the secret matches.
-   - Respond with HTTP 400 for invalid JSON.
-   - Respond with HTTP 403 for invalid secrets.
-6. **Handle Response**: If the answer is correct, a new quiz URL may be provided. The process repeats until no new URL is given.
+This repository provides a small asynchronous quiz solver service built with FastAPI, Playwright, and httpx. The service accepts POST requests from a TDS-style quiz system, then launches a background asynchronous solver that navigates pages with Playwright, extracts questions (or Base64 payloads), computes placeholder answers, and submits them to the quiz system until no next URL is returned.
 
-## Features
-- Headless browser support for JavaScript-rendered pages
-- Data scraping and extraction
-- Data analysis and transformation
-- Automated answer submission
-- Error handling for invalid secrets and payloads
-- Support for various answer types (number, string, boolean, file, JSON)
+## How TDS triggers the solver
 
-## Usage
-1. Clone the repository.
-2. Install dependencies (see below).
-3. Run the script with your email, secret, and quiz URL.
+The TDS quiz system should send a POST request to `/` with a JSON body containing `email`, `secret`, and `url`. The server validates the JSON and the `secret`, then immediately starts the solver in a background asyncio task and returns a quick acknowledgement.
 
-## Example
-To test your endpoint, send a POST request to the demo endpoint:
-```json
-{
-  "email": "your email",
-  "secret": "your secret",
-  "url": "https://tds-llm-analysis.s-anand.net/demo"
-}
-```
+The `secret` in this repository is `supersecret123`. Change it in `server.py` for production.
 
-## Dependencies
-- Python 3.8+
-- [Playwright](https://playwright.dev/python/) or [Selenium](https://www.selenium.dev/) for headless browser automation
-- Requests for HTTP requests
-- Pandas, NumPy for data analysis
+## How the solver works
 
-## Running the Script
+- `solver/browser.py` launches Playwright Chromium (headless) and provides a page and context (`accept_downloads=True`).
+- `solver/quiz_solver.py` implements `solve_quiz(email, secret, start_url)`: it navigates to the `start_url`, extracts question text or Base64 blocks, finds a submit URL on the page, computes an answer (placeholder), submits the answer via `httpx.AsyncClient`, and follows any returned `url` in the JSON response until no further URL is provided.
+
+The compute logic is a placeholder; replace `compute_answer` in `solver/quiz_solver.py` with real answering logic.
+
+## Local run instructions
+
+1. Install dependencies (preferably inside a virtualenv):
+
 ```bash
-python solve_quiz.py --email <your_email> --secret <your_secret> --url <quiz_url>
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+playwright install
 ```
 
-## Error Handling
-- HTTP 200: Secret matches, valid answer
-- HTTP 400: Invalid JSON payload
-- HTTP 403: Invalid secret
+2. Run the server with uvicorn:
 
-## License
-MIT
+```bash
+uvicorn server:app --host 0.0.0.0 --port 8000
+```
+
+3. Send a POST request to `http://localhost:8000/` with the JSON shown above.
+
+## Docker build + run
+
+Build the Docker image and run:
+
+```bash
+docker build -t tds-solver:latest .
+docker run -p 8000:8000 tds-solver:latest
+```
+
+The image uses the official Playwright Python image which includes browser dependencies.
+
+## Render deployment instructions
+
+1. Create a new Web Service on Render.
+2. Choose your repository and select "Dockerfile" as the build method.
+3. No start command is required; Render will use the Dockerfile's default `CMD`.
+
+## Example test
+
+You can use the demo site to test the solver by sending a POST to the server with `url` set to `https://tds-llm-analysis.s-anand.net/demo` and `secret` set to `supersecret123`.

@@ -1,46 +1,16 @@
-# Python
 __pycache__/
-*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+env/
+*.pyc
 *.pyo
 *.pyd
-*.env
-.env
-venv/
-ENV/
-*.egg-info/
-*.sqlite3
-
-# macOS
-.DS_Store
-.AppleDouble
-.LSOverride
-
-# VS Code
-.vscode/
-
-# Jupyter
-.ipynb_checkpoints/
-
-# Logs
-*.log
-
-# Data
-recieved_data/*.csv
-recieved_data/*.xlsx
-recieved_data/*.tsv
-recieved_data/*.json
-recieved_data/*.tmp
-
-# Misc
-*.bak
 *.swp
-*.swo
-
-# Test outputs
+.DS_Store
+coverage/
 htmlcov/
-coverage.xml
-*.cover
-
-# System
-Thumbs.db
-Desktop.ini
+dist/
+build/
+*.egg-info/
+.env
