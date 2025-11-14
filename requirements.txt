@@ -6,3 +6,4 @@ pandas
 numpy
 pdfplumber
 python-multipart
+email-validator
